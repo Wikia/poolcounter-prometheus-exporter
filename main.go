@@ -10,11 +10,11 @@ import (
 )
 
 type PrometheusExporterConfiguration struct {
-	PoolCounterAddress      string `default:"localhost:7531"split_words:"true"`
-	ListenAddress           string `default:"localhost:8000"split_words:"true"`
-	LogsAsJson              bool   `default:"false"split_words:"true"`
-	CollectorTimeoutSeconds int    `default:"5"split_words:"true"`
-	ServerTimeoutSeconds    int    `default:"3"split_words:"true"`
+	PoolCounterAddress      string `default:"localhost:7531" split_words:"true"`
+	ListenAddress           string `default:"localhost:8000" split_words:"true"`
+	LogsAsJson              bool   `default:"false" split_words:"true"`
+	CollectorTimeoutSeconds int    `default:"5" split_words:"true"`
+	ServerTimeoutSeconds    int    `default:"3" split_words:"true"`
 }
 
 func main() {

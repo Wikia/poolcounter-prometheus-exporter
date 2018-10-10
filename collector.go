@@ -152,11 +152,11 @@ func parseTimeDescription(description string) float64 {
 		duration, _ := time.ParseDuration(strings.Replace(segments[1], " ", "", -1))
 
 		return float64(24*60*60*days) + duration.Seconds()
-	} else {
-		duration, _ := time.ParseDuration(strings.Replace(segments[0], " ", "", -1))
-
-		return duration.Seconds()
 	}
+
+	duration, _ := time.ParseDuration(strings.Replace(segments[0], " ", "", -1))
+
+	return duration.Seconds()
 }
 
 func (collector *PoolCounterCollector) Describe(ch chan<- *prometheus.Desc) {
