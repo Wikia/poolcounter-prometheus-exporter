@@ -241,7 +241,7 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(collector.connectErrors, prometheus.CounterValue, value)
 		case fullQueues:
 			value, _ := strconv.ParseFloat(value, 0)
-			ch <- prometheus.MustNewConstMetric(collector.fullQueues, prometheus.GaugeValue, value)
+			ch <- prometheus.MustNewConstMetric(collector.fullQueues, prometheus.CounterValue, value)
 		case lockMismatch:
 			value, _ := strconv.ParseFloat(value, 0)
 			ch <- prometheus.MustNewConstMetric(collector.lockMismatch, prometheus.CounterValue, value)
