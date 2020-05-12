@@ -1,9 +1,28 @@
+// Copyright (c) 2020 Fandom, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 package main
 
 import (
 	"bufio"
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"strconv"
 	"strings"
@@ -25,6 +44,7 @@ const (
 	processedCount    = "processed_count"
 )
 
+// PoolCounterCollector handles scraping metrics from a poolcounter instance.
 type PoolCounterCollector struct {
 	poolCounterAddress      string
 	collectorTimeoutSeconds int
@@ -47,9 +67,10 @@ type PoolCounterCollector struct {
 	processedCount                *prometheus.Desc
 }
 
+// newPoolCounterCollector initializes and returns a new PoolCounterCollector instance based on scraper configuration.
 func newPoolCounterCollector(configuration PrometheusExporterConfiguration) *PoolCounterCollector {
 	return &PoolCounterCollector{
-		poolCounterAddress: configuration.PoolCounterAddress,
+		poolCounterAddress:      configuration.PoolCounterAddress,
 		collectorTimeoutSeconds: configuration.CollectorTimeoutSeconds,
 		totalProcessingTimeSeconds: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_processing_time_seconds"),
@@ -144,6 +165,8 @@ func newPoolCounterCollector(configuration PrometheusExporterConfiguration) *Poo
 	}
 }
 
+// parseTimeDescription takes a poolcounter time string (e.g. 389 days 9343h 3m 28.000000s)
+// and returns its duration in seconds.
 func parseTimeDescription(description string) float64 {
 	segments := strings.Split(description, " days ")
 
@@ -200,7 +223,7 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 		parts := strings.Split(scanner.Text(), ": ")
 
 		if len(parts) < 2 {
-			break
+			break // sanity
 		}
 
 		name, value := parts[0], parts[1]

@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Fandom, Inc.
+# Copyright (c) 2019 GitHub
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -17,12 +17,35 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-FROM golang:1.14.2-alpine
-WORKDIR /go/src/app
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix .cgo -o exporter . && ls
+name: Go
 
-FROM scratch
-COPY --from=0 /go/src/app/exporter /bin/exporter
-USER 65534:65534
-ENTRYPOINT ["/bin/exporter"]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.14
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: go get -v -t -d ./...
+
+      - name: Build
+        run: go build -v .
+
+      - name: Test
+        run: go test -v .
