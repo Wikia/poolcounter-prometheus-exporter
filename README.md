@@ -29,6 +29,7 @@ Metrics are made available at the `/prometheus` HTTP endpoint. They correspond t
 * `poolcounter_release_mismatch` - total number of received `RELEASE` commands for which no lock was found
 * `poolcounter_processed_count` - total number of tasks processed
 ### Gauges
+* `poolcounter_up` - whether poolcounter is up and responding
 * `poolcounter_hashtable_entries` - number of entries in poolcounter hash table
 * `poolcounter_processing_workers` - number of workers busy performing poolcounter-protected tasks
 * `poolcounter_waiting_workers` - number of workers waiting in the queue
