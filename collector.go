@@ -21,12 +21,13 @@ package main
 
 import (
 	"bufio"
-	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -49,6 +50,7 @@ type PoolCounterCollector struct {
 	poolCounterAddress      string
 	collectorTimeoutSeconds int
 
+	up                            *prometheus.Desc
 	totalProcessingTimeSeconds    *prometheus.Desc
 	averageProcessingTimeSeconds  *prometheus.Desc
 	totalGainedTimeSeconds        *prometheus.Desc
@@ -72,6 +74,12 @@ func newPoolCounterCollector(configuration PrometheusExporterConfiguration) *Poo
 	return &PoolCounterCollector{
 		poolCounterAddress:      configuration.PoolCounterAddress,
 		collectorTimeoutSeconds: configuration.CollectorTimeoutSeconds,
+		up: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "up"),
+			"Whether poolcounter is up and responding to the exporter",
+			nil,
+			nil,
+		),
 		totalProcessingTimeSeconds: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_processing_time_seconds"),
 			"Total processing time in seconds",
@@ -186,6 +194,7 @@ func (collector *PoolCounterCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.totalProcessingTimeSeconds
 	ch <- collector.averageProcessingTimeSeconds
 
+	ch <- collector.up
 	ch <- collector.totalAcquired
 	ch <- collector.totalReleases
 	ch <- collector.hashTableEntries
@@ -199,21 +208,30 @@ func (collector *PoolCounterCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
-	conn, err := net.Dial("tcp", collector.poolCounterAddress)
+	var finalErr error = nil
+	var upValue float64 = 1 // 1 or 0
 
-	if err != nil {
-		log.Error(err)
+	completeCollection := func() {
+		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, upValue)
+		if finalErr != nil {
+			log.Error(finalErr)
+		}
+	}
+
+	conn, finalErr := net.Dial("tcp", collector.poolCounterAddress)
+	if finalErr != nil {
+		upValue = 0
 		return
 	}
 
 	defer conn.Close()
+	defer completeCollection()
 
 	conn.SetDeadline(time.Now().Add(time.Duration(collector.collectorTimeoutSeconds) * time.Second))
 
-	_, err = conn.Write([]byte("STATS FULL\n"))
-
-	if err != nil {
-		log.Error(err)
+	_, finalErr = conn.Write([]byte("STATS FULL\n"))
+	if finalErr != nil {
+		upValue = 0
 		return
 	}
 
@@ -277,7 +295,7 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Error(err)
+	if finalErr = scanner.Err(); finalErr != nil {
+		upValue = 0
 	}
 }
