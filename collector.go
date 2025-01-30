@@ -208,27 +208,32 @@ func (collector *PoolCounterCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
-	conn, err := net.Dial("tcp", collector.poolCounterAddress)
+	var finalErr error = nil
+	var upValue float64 = 1 // 1 or 0
 
-	if err != nil {
-		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, 0)
-		log.Error(err)
+	completeCollection := func() {
+		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, upValue)
+		if finalErr != nil {
+			log.Error(finalErr)
+		}
+	}
+
+	conn, finalErr := net.Dial("tcp", collector.poolCounterAddress)
+	if finalErr != nil {
+		upValue = 0
 		return
 	}
 
 	defer conn.Close()
+	defer completeCollection()
 
 	conn.SetDeadline(time.Now().Add(time.Duration(collector.collectorTimeoutSeconds) * time.Second))
 
-	_, err = conn.Write([]byte("STATS FULL\n"))
-
-	if err != nil {
-		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, 0)
-		log.Error(err)
+	_, finalErr = conn.Write([]byte("STATS FULL\n"))
+	if finalErr != nil {
+		upValue = 0
 		return
 	}
-
-	ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, 1)
 
 	scanner := bufio.NewScanner(conn)
 
@@ -290,8 +295,7 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, 0)
-		log.Error(err)
+	if finalErr = scanner.Err(); finalErr != nil {
+		upValue = 0
 	}
 }
