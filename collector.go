@@ -211,12 +211,12 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 	var finalErr error = nil
 	var upValue float64 = 1 // 1 or 0
 
-	completeCollection := func() {
+	defer func() {
 		ch <- prometheus.MustNewConstMetric(collector.up, prometheus.GaugeValue, upValue)
 		if finalErr != nil {
 			log.Error(finalErr)
 		}
-	}
+	}()
 
 	conn, finalErr := net.Dial("tcp", collector.poolCounterAddress)
 	if finalErr != nil {
@@ -225,7 +225,6 @@ func (collector *PoolCounterCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	defer conn.Close()
-	defer completeCollection()
 
 	conn.SetDeadline(time.Now().Add(time.Duration(collector.collectorTimeoutSeconds) * time.Second))
 
